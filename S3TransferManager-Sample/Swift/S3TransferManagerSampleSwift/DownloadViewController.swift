@@ -22,15 +22,15 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
     @IBOutlet weak var collectionView: UICollectionView!
     
     var downloadRequests = Array<AWSS3TransferManagerDownloadRequest?>()
-    var downloadFileURLs = Array<NSURL?>()
+    var downloadFileURLs = Array<URL?>()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         listObjects()
 
         do {
-            try NSFileManager.defaultManager().createDirectoryAtURL(
-                NSURL(fileURLWithPath: NSTemporaryDirectory()).URLByAppendingPathComponent("download"),
+            try FileManager.default.createDirectory(
+                at: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("download"),
                 withIntermediateDirectories: true,
                 attributes: nil)
         } catch {
@@ -38,17 +38,17 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
-    @IBAction func showAlertController(barButtonItem: UIBarButtonItem) {
+    @IBAction func showAlertController(_ barButtonItem: UIBarButtonItem) {
         let alertController = UIAlertController(
             title: "Available Actions",
             message: "Choose your action.",
-            preferredStyle: .ActionSheet)
+            preferredStyle: .actionSheet)
         
         let refreshAction = UIAlertAction(
             title: "Refresh",
-            style: .Default) { (action) -> Void in
+            style: .default) { (action) -> Void in
                 self.downloadRequests.removeAll(keepCapacity: false)
-                self.downloadFileURLs.removeAll(keepCapacity: false)
+                self.downloadFileURLs.removeAll(keepingCapacity: false)
                 self.collectionView.reloadData()
                 self.listObjects()
         }
@@ -56,25 +56,25 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         let downloadAllAction = UIAlertAction(
             title: "Download All",
-            style: .Default) { (action) -> Void in
+            style: .default) { (action) -> Void in
                 self.downloadAll()
         }
         alertController.addAction(downloadAllAction)
         
         let cancelAllDownloadsAction = UIAlertAction(
             title: "Cancel All Downloads",
-            style: .Default) { (action) -> Void in
+            style: .default) { (action) -> Void in
                 self.cancelAllDownloads()
         }
         alertController.addAction(cancelAllDownloadsAction)
         
         let cancelAction = UIAlertAction(
             title: "Cancel",
-            style: .Cancel,
+            style: .cancel,
             handler: nil)
         alertController.addAction(cancelAction)
         
-        self.presentViewController(
+        self.present(
             alertController,
             animated: true,
             completion: nil)
@@ -121,7 +121,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
-    func download(downloadRequest: AWSS3TransferManagerDownloadRequest) {
+    func download(_ downloadRequest: AWSS3TransferManagerDownloadRequest) {
         switch (downloadRequest.state) {
         case .NotStarted, .Paused:
             let transferManager = AWSS3TransferManager.defaultS3TransferManager()
@@ -188,22 +188,22 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         self.collectionView.reloadData()
     }
     
-    func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return self.downloadRequests.count
     }
     
-    func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCellWithReuseIdentifier("DownloadCollectionViewCell", forIndexPath: indexPath) as! DownloadCollectionViewCell
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "DownloadCollectionViewCell", for: indexPath) as! DownloadCollectionViewCell
         
         if let downloadRequest = self.downloadRequests[indexPath.row] {
             downloadRequest.downloadProgress = { (bytesWritten, totalBytesWritten, totalBytesExpectedToWrite) -> Void in
-                dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                DispatchQueue.main.async(execute: { () -> Void in
                     if totalBytesExpectedToWrite > 0 {
                         cell.progressView.progress = Float(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite));
                     }
                 })
             }
-            cell.label.hidden = false
+            cell.label.isHidden = false
             cell.imageView.image = nil
             
             switch downloadRequest.state {
@@ -227,9 +227,9 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
         
         if let downloadFileURL = self.downloadFileURLs[indexPath.row] {
-            cell.label.hidden = true
+            cell.label.isHidden = true
             cell.progressView.progress = 1.0
-            if let data = NSData(contentsOfURL: downloadFileURL) {
+            if let data = try? Data(contentsOf: downloadFileURL) {
                 cell.imageView.image = UIImage(data: data)
             }
         }
@@ -237,8 +237,8 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         return cell
     }
     
-    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
-        collectionView.deselectItemAtIndexPath(indexPath, animated: true)
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
         if let downloadRequest = self.downloadRequests[indexPath.row] {
             
             switch (downloadRequest.state) {
@@ -269,7 +269,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
         
         if let downloadFileURL = self.downloadFileURLs[indexPath.row] {
-            if let data = NSData(contentsOfURL: downloadFileURL) {
+            if let data = try? Data(contentsOf: downloadFileURL) {
                 let imageInfo = JTSImageInfo()
                 imageInfo.image = UIImage(data: data)
                 
@@ -282,7 +282,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
-    func indexOfDownloadRequest(array: Array<AWSS3TransferManagerDownloadRequest?>, downloadRequest: AWSS3TransferManagerDownloadRequest?) -> Int? {
+    func indexOfDownloadRequest(_ array: Array<AWSS3TransferManagerDownloadRequest?>, downloadRequest: AWSS3TransferManagerDownloadRequest?) -> Int? {
         for (index, object) in array.enumerate() {
             if object == downloadRequest {
                 return index
