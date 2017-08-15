@@ -127,8 +127,8 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
             let transferManager = AWSS3TransferManager.default()
             transferManager?.download(downloadRequest).continue({ (task) -> AnyObject! in
                 if let error = task.error {
-                    if error.domain == AWSS3TransferManagerErrorDomain as String
-                        && AWSS3TransferManagerErrorType(rawValue: error.code) == AWSS3TransferManagerErrorType.Paused {
+                    if error._domain == AWSS3TransferManagerErrorDomain as String
+                        && AWSS3TransferManagerErrorType(rawValue: error._code) == AWSS3TransferManagerErrorType.paused {
                             print("Download paused.")
                     } else {
                         print("download failed: [\(error)]")
@@ -136,7 +136,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                 } else if let exception = task.exception {
                     print("download failed: [\(exception)]")
                 } else {
-                    DispatchQueue.main.asynchronously(execute: { () -> Void in
+                    DispatchQueue.main.async(execute: { () -> Void in
                         if let index = self.indexOfDownloadRequest(self.downloadRequests, downloadRequest: downloadRequest) {
                             self.downloadRequests[index] = nil
                             self.downloadFileURLs[index] = downloadRequest.downloadingFileURL
@@ -253,8 +253,8 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                     } else if let exception = task.exception {
                         print("pause() failed: [\(exception)]")
                     } else {
-                        DispatchQueue.main.asynchronously(execute: { () -> Void in
-                            collectionView.reloadItemsAtIndexPaths([indexPath])
+                        DispatchQueue.main.async(execute: { () -> Void in
+                            collectionView.reloadItems(at: [indexPath])
                         })
                     }
                     return nil
