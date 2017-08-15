@@ -92,20 +92,20 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
             if let exception = task.exception {
                 print("listObjects failed: [\(exception)]")
             }
-            if let listObjectsOutput = task.result as? AWSS3ListObjectsOutput {
+            if let listObjectsOutput = task.result as AWSS3ListObjectsOutput! {
                 if let contents = listObjectsOutput.contents {
                     for s3Object in contents {
-                        let downloadingFileURL = NSURL(fileURLWithPath: NSTemporaryDirectory()).URLByAppendingPathComponent("download").URLByAppendingPathComponent(s3Object.key!)
-                        let downloadingFilePath = downloadingFileURL.path!
+                        let downloadingFileURL = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("download")?.appendingPathComponent(s3Object.key!)
+                        let downloadingFilePath = downloadingFileURL?.path
                         
-                        if NSFileManager.defaultManager().fileExistsAtPath(downloadingFilePath) {
+                        if FileManager.default.fileExists(atPath: downloadingFilePath!) {
                             self.downloadRequests.append(nil)
                             self.downloadFileURLs.append(downloadingFileURL)
                         } else {
                             let downloadRequest = AWSS3TransferManagerDownloadRequest()
-                            downloadRequest.bucket = S3BucketName
-                            downloadRequest.key = s3Object.key
-                            downloadRequest.downloadingFileURL = downloadingFileURL
+                            downloadRequest?.bucket = S3BucketName
+                            downloadRequest?.key = s3Object.key
+                            downloadRequest?.downloadingFileURL = downloadingFileURL
                             
                             self.downloadRequests.append(downloadRequest)
                             self.downloadFileURLs.append(nil)

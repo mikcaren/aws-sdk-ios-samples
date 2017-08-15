@@ -152,7 +152,7 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
             switch uploadRequest.state {
             case .running:
    
-                if let data = Data(contentsOfURL: uploadRequest.body) {
+                if let data = Data(contentsOf: uploadRequest.body) {
                     cell.imageView.image = UIImage(data: data)
                     cell.label.isHidden = true
                 }
