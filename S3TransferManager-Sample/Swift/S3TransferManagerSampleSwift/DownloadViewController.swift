@@ -85,7 +85,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         let listObjectsRequest = AWSS3ListObjectsRequest()
         listObjectsRequest?.bucket = S3BucketName
-        s3.listObjects(listObjectsRequest!).continue { (task) -> AnyObject! in
+        s3.listObjects(listObjectsRequest!).continue(successBlock: { (task) -> AnyObject! in
             if let error = task.error {
                 print("listObjects failed: [\(error)]")
             }
@@ -112,13 +112,13 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                         }
                     }
                     
-                    DispatchQueue.main.asynchronously(execute: { () -> Void in
+                    DispatchQueue.main.async(execute: { () -> Void in
                         self.collectionView.reloadData()
                     })
                 }
             }
             return nil
-        }
+        })
     }
     
     func download(_ downloadRequest: AWSS3TransferManagerDownloadRequest) {
@@ -141,8 +141,8 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                             self.downloadRequests[index] = nil
                             self.downloadFileURLs[index] = downloadRequest.downloadingFileURL
                             
-                            let indexPath = NSIndexPath(forRow: index, inSection: 0)
-                            self.collectionView.reloadItemsAtIndexPaths([indexPath])
+                            let indexPath = NSIndexPath(item: index, section: 0)
+                            self.collectionView.reloadItems(at: [indexPath as IndexPath])
                         }
                     })
                 }

@@ -151,10 +151,12 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
         if let uploadRequest = self.uploadRequests[indexPath.row] {
             switch uploadRequest.state {
             case .running:
+   
                 if let data = Data(contentsOfURL: uploadRequest.body) {
                     cell.imageView.image = UIImage(data: data)
                     cell.label.isHidden = true
                 }
+              
                 
                 uploadRequest.uploadProgress = { (bytesSent, totalBytesSent, totalBytesExpectedToSend) -> Void in
                     DispatchQueue.main.async(execute: { () -> Void in
