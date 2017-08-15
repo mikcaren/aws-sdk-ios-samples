@@ -47,7 +47,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         let refreshAction = UIAlertAction(
             title: "Refresh",
             style: .default) { (action) -> Void in
-                self.downloadRequests.removeAll(keepCapacity: false)
+                self.downloadRequests.removeAll(keepingCapacity: false)
                 self.downloadFileURLs.removeAll(keepingCapacity: false)
                 self.collectionView.reloadData()
                 self.listObjects()
@@ -81,11 +81,11 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     func listObjects() {
-        let s3 = AWSS3.defaultS3()
+        let s3 = AWSS3.default()
         
         let listObjectsRequest = AWSS3ListObjectsRequest()
-        listObjectsRequest.bucket = S3BucketName
-        s3.listObjects(listObjectsRequest).continueWithBlock { (task) -> AnyObject! in
+        listObjectsRequest?.bucket = S3BucketName
+        s3.listObjects(listObjectsRequest!).continue { (task) -> AnyObject! in
             if let error = task.error {
                 print("listObjects failed: [\(error)]")
             }
@@ -112,7 +112,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                         }
                     }
                     
-                    dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                    DispatchQueue.main.asynchronously(execute: { () -> Void in
                         self.collectionView.reloadData()
                     })
                 }
@@ -123,9 +123,9 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
     
     func download(_ downloadRequest: AWSS3TransferManagerDownloadRequest) {
         switch (downloadRequest.state) {
-        case .NotStarted, .Paused:
-            let transferManager = AWSS3TransferManager.defaultS3TransferManager()
-            transferManager.download(downloadRequest).continueWithBlock({ (task) -> AnyObject! in
+        case .notStarted, .paused:
+            let transferManager = AWSS3TransferManager.default()
+            transferManager?.download(downloadRequest).continue({ (task) -> AnyObject! in
                 if let error = task.error {
                     if error.domain == AWSS3TransferManagerErrorDomain as String
                         && AWSS3TransferManagerErrorType(rawValue: error.code) == AWSS3TransferManagerErrorType.Paused {
@@ -136,7 +136,7 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                 } else if let exception = task.exception {
                     print("download failed: [\(exception)]")
                 } else {
-                    dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                    DispatchQueue.main.asynchronously(execute: { () -> Void in
                         if let index = self.indexOfDownloadRequest(self.downloadRequests, downloadRequest: downloadRequest) {
                             self.downloadRequests[index] = nil
                             self.downloadFileURLs[index] = downloadRequest.downloadingFileURL
@@ -156,10 +156,10 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     func downloadAll() {
-        for (_, value) in self.downloadRequests.enumerate() {
+        for (_, value) in self.downloadRequests.enumerated() {
             if let downloadRequest = value {
-                if downloadRequest.state == .NotStarted
-                    || downloadRequest.state == .Paused {
+                if downloadRequest.state == .notStarted
+                    || downloadRequest.state == .paused {
                         self.download(downloadRequest)
                 }
             }
@@ -169,11 +169,11 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     func cancelAllDownloads() {
-        for (_, value) in self.downloadRequests.enumerate() {
+        for (_, value) in self.downloadRequests.enumerated() {
             if let downloadRequest = value {
-                if downloadRequest.state == .Running
-                    || downloadRequest.state == .Paused {
-                        downloadRequest.cancel().continueWithBlock({ (task) -> AnyObject! in
+                if downloadRequest.state == .running
+                    || downloadRequest.state == .paused {
+                        downloadRequest.cancel().continue({ (task) -> AnyObject! in
                             if let error = task.error {
                                 print("cancel() failed: [\(error)]")
                             } else if let exception = task.exception {
@@ -207,16 +207,16 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
             cell.imageView.image = nil
             
             switch downloadRequest.state {
-            case .NotStarted, .Paused:
+            case .notStarted, .paused:
                 cell.progressView.progress = 0.0
                 cell.label.text = "Download"
                 break
                 
-            case .Running:
+            case .running:
                 cell.label.text = "Pause"
                 break
                 
-            case .Canceling:
+            case .canceling:
                 cell.progressView.progress = 1.0
                 cell.label.text = "Cancelled"
                 break
@@ -242,18 +242,18 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
         if let downloadRequest = self.downloadRequests[indexPath.row] {
             
             switch (downloadRequest.state) {
-            case .NotStarted, .Paused:
+            case .notStarted, .paused:
                 self.download(downloadRequest)
                 break
                 
-            case .Running:
-                downloadRequest.pause().continueWithBlock({ (task) -> AnyObject! in
+            case .running:
+                downloadRequest.pause().continue({ (task) -> AnyObject! in
                     if let error = task.error {
                         print("pause() failed: [\(error)]")
                     } else if let exception = task.exception {
                         print("pause() failed: [\(exception)]")
                     } else {
-                        dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                        DispatchQueue.main.asynchronously(execute: { () -> Void in
                             collectionView.reloadItemsAtIndexPaths([indexPath])
                         })
                     }
@@ -275,15 +275,15 @@ class DownloadViewController: UIViewController, UICollectionViewDelegate, UIColl
                 
                 let imageViewer = JTSImageViewController(
                     imageInfo: imageInfo,
-                    mode: .Image,
-                    backgroundStyle: .Blurred)
-                imageViewer.showFromViewController(self, transition: .FromOffscreen)
+                    mode: .image,
+                    backgroundStyle: .blurred)
+                imageViewer?.show(from: self, transition: .fromOffscreen)
             }
         }
     }
     
     func indexOfDownloadRequest(_ array: Array<AWSS3TransferManagerDownloadRequest?>, downloadRequest: AWSS3TransferManagerDownloadRequest?) -> Int? {
-        for (index, object) in array.enumerate() {
+        for (index, object) in array.enumerated() {
             if object == downloadRequest {
                 return index
             }

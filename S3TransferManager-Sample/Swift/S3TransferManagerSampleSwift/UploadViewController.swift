@@ -73,15 +73,15 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
         imagePickerController.maximumImagesCount = 20
         imagePickerController.imagePickerDelegate = self
         
-        self.presentViewController(
+        self.present(
             imagePickerController,
             animated: true) { () -> Void in }
     }
     
     func upload(_ uploadRequest: AWSS3TransferManagerUploadRequest) {
-        let transferManager = AWSS3TransferManager.defaultS3TransferManager()
+        let transferManager = AWSS3TransferManager.default()
         
-        transferManager.upload(uploadRequest).continueWithBlock { (task) -> AnyObject! in
+        transferManager?.upload(uploadRequest).continue { (task) -> AnyObject! in
             if let error = task.error {
                 if error.domain == AWSS3TransferManagerErrorDomain as String {
                     if let errorCode = AWSS3TransferManagerErrorType(rawValue: error.code) {
@@ -124,9 +124,9 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
     }
     
     func cancelAllUploads() {
-        for (_, uploadRequest) in self.uploadRequests.enumerate() {
+        for (_, uploadRequest) in self.uploadRequests.enumerated() {
             if let uploadRequest = uploadRequest {
-                uploadRequest.cancel().continueWithBlock({ (task) -> AnyObject! in
+                uploadRequest.cancel().continue({ (task) -> AnyObject! in
                     if let error = task.error {
                         print("cancel() failed: [\(error)]")
                     }
@@ -150,7 +150,7 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
         
         if let uploadRequest = self.uploadRequests[indexPath.row] {
             switch uploadRequest.state {
-            case .Running:
+            case .running:
                 if let data = Data(contentsOfURL: uploadRequest.body) {
                     cell.imageView.image = UIImage(data: data)
                     cell.label.isHidden = true
@@ -166,13 +166,13 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
                 
                 break;
                 
-            case .Canceling:
+            case .canceling:
                 cell.imageView.image = nil
                 cell.label.isHidden = false
                 cell.label.text = "Cancelled"
                 break;
                 
-            case .Paused:
+            case .paused:
                 cell.imageView.image = nil
                 cell.label.isHidden = false
                 cell.label.text = "Paused"
@@ -202,8 +202,8 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
         
         if let uploadRequest = self.uploadRequests[indexPath.row] {
             switch uploadRequest.state {
-            case .Running:
-                uploadRequest.pause().continueWithBlock({ (task) -> AnyObject! in
+            case .running:
+                uploadRequest.pause().continue({ (task) -> AnyObject! in
                     if let error = task.error {
                         print("pause() failed: [\(error)]")
                     }
@@ -215,7 +215,7 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
                 })
                 break
                 
-            case .Paused:
+            case .paused:
                 self.upload(uploadRequest)
                 collectionView.reloadItems(at: [indexPath])
                 break
@@ -241,14 +241,14 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
                             try? imageData!.write(to: URL(fileURLWithPath: filePath), options: [.atomic])
                             
                             let uploadRequest = AWSS3TransferManagerUploadRequest()
-                            uploadRequest.body = fileURL
-                            uploadRequest.key = fileName
-                            uploadRequest.bucket = S3BucketName
+                            uploadRequest?.body = fileURL
+                            uploadRequest?.key = fileName
+                            uploadRequest?.bucket = S3BucketName
                             
                             self.uploadRequests.append(uploadRequest)
                             self.uploadFileURLs.append(nil)
                             
-                            self.upload(uploadRequest)
+                            self.upload(uploadRequest!)
                         }
                     }
                 }
@@ -262,7 +262,7 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
     }
     
     func indexOfUploadRequest(_ array: Array<AWSS3TransferManagerUploadRequest?>, uploadRequest: AWSS3TransferManagerUploadRequest?) -> Int? {
-        for (index, object) in array.enumerate() {
+        for (index, object) in array.enumerated() {
             if object == uploadRequest {
                 return index
             }
