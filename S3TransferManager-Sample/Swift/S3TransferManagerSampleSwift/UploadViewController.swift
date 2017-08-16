@@ -18,6 +18,7 @@ import AssetsLibrary
 import AWSS3
 import ELCImagePickerController
 
+// Error: Type 'UploadViewController' does not conform to protocol 'ELCImagePickerControllerDelegat'
 class UploadViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, ELCImagePickerControllerDelegate {
     
     @IBOutlet weak var collectionView: UICollectionView!
@@ -80,14 +81,15 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
     
     func upload(_ uploadRequest: AWSS3TransferManagerUploadRequest) {
         let transferManager = AWSS3TransferManager.default()
-        
-        transferManager?.upload(uploadRequest).continue { (task) -> AnyObject! in
+
+// Error: ambigous use of 'continue'
+       transferManager?.upload(uploadRequest).continue { (task) -> AnyObject! in
             if let error = task.error {
                 if error.domain == AWSS3TransferManagerErrorDomain as String {
                     if let errorCode = AWSS3TransferManagerErrorType(rawValue: error.code) {
                         switch (errorCode) {
                         case .Cancelled, .Paused:
-                            dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                            dispatch_get_main_queue().asynchronouslyasync(dispatch_get_main_queue(),execute: { () -> Void in
                                 self.collectionView.reloadData()
                             })
                             break;
@@ -109,7 +111,7 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
             }
             
             if task.result != nil {
-                dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                dispatch_get_main_queue().asynchronously(execute: { () -> Void in
                     if let index = self.indexOfUploadRequest(self.uploadRequests, uploadRequest: uploadRequest) {
                         self.uploadRequests[index] = nil
                         self.uploadFileURLs[index] = uploadRequest.body
@@ -151,13 +153,12 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
         if let uploadRequest = self.uploadRequests[indexPath.row] {
             switch uploadRequest.state {
             case .running:
-   
-                if let data = Data(contentsOf: uploadRequest.body) {
+                
+                if let data = try? Data(contentsOf: uploadRequest.body) {
                     cell.imageView.image = UIImage(data: data)
                     cell.label.isHidden = true
                 }
-              
-                
+ 
                 uploadRequest.uploadProgress = { (bytesSent, totalBytesSent, totalBytesExpectedToSend) -> Void in
                     DispatchQueue.main.async(execute: { () -> Void in
                         if totalBytesExpectedToSend > 0 {
@@ -228,7 +229,7 @@ class UploadViewController: UIViewController, UICollectionViewDelegate, UICollec
         }
     }
     
-    func elcImagePickerController(_ picker: ELCImagePickerController!, didFinishPickingMediaWithInfo info: [AnyObject]!) {
+    func elcImagePickerController(_ picker:ELCImagePickerController!, didFinishPickingMediaWithInfo info: [AnyObject]!) {
         self.dismiss(animated: true, completion: nil)
         
         for (_, imageDictionary) in info.enumerated() {
